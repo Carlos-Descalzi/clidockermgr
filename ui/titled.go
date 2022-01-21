@@ -31,7 +31,7 @@ func (t *TitledContainer) SetRect(rect Rect) {
 
 func (t *TitledContainer) Draw() {
 	GotoXY(t.rect.x, t.rect.y)
-	Background(2)
+	Background(3)
 	Foreground(0)
 	WriteFill(t.title, t.rect.w)
 	if t.border {
