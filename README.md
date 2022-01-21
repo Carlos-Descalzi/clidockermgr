@@ -12,6 +12,7 @@ Containers:
 
 - v: View container details
 - s: Opens a shell in an active container
+- l: View container logs
 - k: Kill a container
 - delete: Deletes a container
 
