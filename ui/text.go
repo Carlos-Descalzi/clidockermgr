@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"log"
 	"strings"
 
 	"github.com/clidockermgr/input"
@@ -18,6 +19,7 @@ type TextView struct {
 
 func TextViewNew(text string) *TextView {
 	var textView = TextView{text: strings.Split(text, "\n")}
+	log.Printf("Text lines: %d\n", len(textView.text))
 	textView.Init()
 
 	for r := range textView.text {
@@ -30,15 +32,16 @@ func TextViewNew(text string) *TextView {
 func (t *TextView) Draw() {
 	var y uint8 = 0
 
-	var firstLine = t.ypos
-	var lastLine = t.ypos + t.rect.h - 1
+	var firstLine = int(t.ypos)
+	var lastLine = int(t.ypos + t.rect.h - 1)
 
-	var length = uint8(len(t.text))
+	var length = len(t.text)
 
 	if lastLine >= length {
 		lastLine = length - 1
-		firstLine = lastLine - t.rect.h
+		firstLine = util.Max(0, lastLine-int(t.rect.h))
 	}
+	log.Printf("%d %d\n", firstLine, lastLine)
 
 	for v := firstLine; v <= lastLine; v++ {
 
@@ -50,6 +53,7 @@ func (t *TextView) Draw() {
 		} else {
 			line = ""
 		}
+		log.Printf("Writing %s\n", line)
 
 		WriteFill(line, t.rect.w)
 
@@ -57,6 +61,10 @@ func (t *TextView) Draw() {
 		if y >= t.rect.h {
 			break
 		}
+	}
+	for ; y < t.rect.h; y++ {
+		GotoXY(t.rect.x, t.rect.y+y)
+		WriteFill("", t.rect.w)
 	}
 }
 

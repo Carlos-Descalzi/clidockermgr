@@ -15,6 +15,18 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
+const HelpText = "Keys:\n\n" +
+	"    tab: Switch focus between UI elements\n" +
+	"    ESC: Closes active popup, or exits the application\n\n" +
+	"    Container view:\n" +
+	"        v: Displays container information\n" +
+	"        k: Kills a container\n" +
+	"        delete: Deletes a container\n" +
+	"        s: Opens a shell in a container\n\n" +
+	"    Images view:\n" +
+	"        v: Displays image information\n" +
+	"        delete: Deletes an image"
+
 func ShowTextPopup(app *ui.Application, title string, text string) {
 
 	maxWidth, maxHeight := ui.ScreenSize()
@@ -45,6 +57,10 @@ func ShowImageInspect(app *ui.Application, inspect types.ImageInspect) {
 		var strResult = string(result)
 		ShowTextPopup(app, "Image Details", strResult)
 	}
+}
+
+func ShowHelp(app *ui.Application) {
+	ShowTextPopup(app, "Help", HelpText)
 }
 
 func OpenShell(containerId string) {
@@ -91,6 +107,9 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		client.ContainerRemove(context.Background(), item.ID, types.ContainerRemoveOptions{})
 	})
+	containerList.AddKeyHandler(input.KeyInputChar('h'), func(input.KeyInput) {
+		ShowHelp(app)
+	})
 
 	var titledContainer1 = ui.TitledContainerNew("Containers", containerList, false)
 	titledContainer1.SetRect(ui.RectNew(1, 1, width, height))
@@ -112,6 +131,9 @@ func BuildImagesView(app *ui.Application, client *client.Client, width uint8, he
 	imageList.AddKeyHandler(input.KeyInputKey(keyboard.KeyDelete), func(input.KeyInput) {
 		var item = imageList.SelectedItem().Value().(*types.ImageSummary)
 		client.ImageRemove(context.Background(), item.ID, types.ImageRemoveOptions{})
+	})
+	imageList.AddKeyHandler(input.KeyInputChar('h'), func(input.KeyInput) {
+		ShowHelp(app)
 	})
 
 	var titledContainer2 = ui.TitledContainerNew("Images", imageList, false)
