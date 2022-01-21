@@ -7,9 +7,9 @@ import (
 	"os"
 	"os/exec"
 
-	docker "github.com/clidockermgr/docker"
+	"github.com/clidockermgr/docker"
 	"github.com/clidockermgr/input"
-	ui "github.com/clidockermgr/ui"
+	"github.com/clidockermgr/ui"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/eiannone/keyboard"

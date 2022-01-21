@@ -31,7 +31,7 @@ func ScreenSize() (uint8, uint8) {
 	return uint8(ws.Col), uint8(ws.Row)
 }
 
-func GotoXY(x uint8, y uint8) {
+func GotoXY(x, y uint8) {
 	fmt.Printf("\u001b[%d;%dH", y, x)
 }
 
@@ -55,7 +55,7 @@ func WriteFill(text string, length uint8) {
 	}
 }
 
-func WriteV(char string, x uint8, y uint8, length uint8) {
+func WriteV(char string, x, y, length uint8) {
 	for i := 0; i < int(length); i++ {
 		GotoXY(x, y+uint8(i))
 		fmt.Print(char)

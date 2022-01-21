@@ -16,7 +16,7 @@ type Rect struct {
 type KeyHandler func(input.KeyInput)
 type RedrawListener func(view interface{})
 
-func RectNew(x uint8, y uint8, w uint8, h uint8) Rect {
+func RectNew(x, y, w, h uint8) Rect {
 	return Rect{x, y, w, h}
 }
 

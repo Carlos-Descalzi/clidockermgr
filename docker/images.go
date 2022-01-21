@@ -2,9 +2,12 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strings"
+	"time"
 
-	ui "github.com/clidockermgr/ui"
+	"github.com/clidockermgr/ui"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
@@ -18,10 +21,30 @@ func (i ImageItem) Value() interface{} {
 }
 
 func (i ImageItem) String() string {
+
+	var id = i.image.ID[7:19]
+
+	var repo = ""
+	var tag = ""
 	if len(i.image.RepoTags) > 0 {
-		return i.image.RepoTags[len(i.image.RepoTags)-1]
+		repo = i.image.RepoTags[len(i.image.RepoTags)-1]
+		if strings.Contains(repo, ":") {
+			var i = strings.Index(repo, ":")
+			tag = repo[i+1:]
+			repo = repo[0:i]
+		}
 	}
-	return i.image.ID[0:12]
+
+	var durationHs = uint64(time.Since(time.Unix(i.image.Created, 0)).Hours())
+
+	var durationStr = ""
+	if durationHs > 24 {
+		durationStr += fmt.Sprintf("%d days, ", durationHs/24)
+		durationHs %= 24
+	}
+	durationStr += fmt.Sprintf("%d hs", durationHs)
+
+	return fmt.Sprintf("%s %-60s %-20s %s", id, repo, tag, durationStr)
 }
 
 type ImagesListModel struct {

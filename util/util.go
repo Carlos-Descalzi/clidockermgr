@@ -4,20 +4,21 @@ import (
 	"fmt"
 )
 
-func Max(v1 int, v2 int) int {
-	if v1 > v2 {
-		return v1
-	}
-	return v2
-}
-func MaxU8(v1 uint8, v2 uint8) uint8 {
+func Max(v1, v2 int) int {
 	if v1 > v2 {
 		return v1
 	}
 	return v2
 }
 
-func Min(v1 int, v2 int) int {
+func MaxU8(v1, v2 uint8) uint8 {
+	if v1 > v2 {
+		return v1
+	}
+	return v2
+}
+
+func Min(v1, v2 int) int {
 	if v1 < v2 {
 		return v1
 	}
