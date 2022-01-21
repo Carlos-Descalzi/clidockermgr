@@ -1,6 +1,8 @@
 package util
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func Max(v1 int, v2 int) int {
 	if v1 > v2 {
@@ -22,22 +24,23 @@ func Min(v1 int, v2 int) int {
 	return v2
 }
 
+const KB = 1024
+const MB = KB * 1024
+const GB = MB * 1024
+const TB = GB * 1024
+
 func FormatMemory(amount int) string {
-	if amount < 1024 {
+	if amount < KB {
 		return fmt.Sprintf("%d B", amount)
 	}
-	var v = float32(amount) / 1024.0
-	if v < 1024 {
-		return fmt.Sprintf("%.2f KB", v)
+	if amount < MB {
+		return fmt.Sprintf("%.2f KB", float32(amount)/KB)
 	}
-	v /= 1024.0
-	if v < 1024 {
-		return fmt.Sprintf("%.2f MB", v)
+	if amount < GB {
+		return fmt.Sprintf("%.2f MB", float32(amount)/MB)
 	}
-	v /= 1024.0
-	if v < 1024 {
-		return fmt.Sprintf("%.2f GB", v)
+	if amount < TB {
+		return fmt.Sprintf("%.2f GB", float32(amount)/GB)
 	}
-	v /= 1024.0
-	return fmt.Sprintf("%.2f TB", v)
+	return fmt.Sprintf("%.2f TB", float32(amount)/TB)
 }

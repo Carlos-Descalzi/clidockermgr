@@ -59,7 +59,9 @@ func (a *Application) CheckInput() {
 	if err != nil {
 		panic(err)
 	}
+
 	key := input.GetKey()
+
 	switch key {
 	case keyboard.KeyTab:
 		a.CycleCurrent()
@@ -79,10 +81,10 @@ func (a *Application) CheckInput() {
 			}
 		}
 	}
-
 }
 
 func (a *Application) DrawAll() {
+
 	if a.currentPopup != nil {
 		a.currentPopup.Draw()
 	} else {
@@ -93,6 +95,7 @@ func (a *Application) DrawAll() {
 			}
 		}
 	}
+
 }
 
 func (a *Application) RedrawRequested(view interface{}) {

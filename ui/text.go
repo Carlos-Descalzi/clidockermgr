@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"log"
 	"strings"
 
 	"github.com/clidockermgr/input"
@@ -18,12 +17,15 @@ type TextView struct {
 }
 
 func TextViewNew(text string) *TextView {
-	var textView = TextView{text: strings.Split(text, "\n")}
-	log.Printf("Text lines: %d\n", len(textView.text))
+
+	var textLines = strings.Split(text, "\n")
+
+	var textView = TextView{text: textLines}
+
 	textView.Init()
 
-	for r := range textView.text {
-		textView.maxWidth = uint8(util.Max(int(textView.maxWidth), len(textView.text[r])))
+	for r := range textLines {
+		textView.maxWidth = uint8(util.Max(int(textView.maxWidth), len(textLines[r])))
 	}
 
 	return &textView
@@ -41,7 +43,6 @@ func (t *TextView) Draw() {
 		lastLine = length - 1
 		firstLine = util.Max(0, lastLine-int(t.rect.h))
 	}
-	log.Printf("%d %d\n", firstLine, lastLine)
 
 	for v := firstLine; v <= lastLine; v++ {
 
@@ -53,7 +54,6 @@ func (t *TextView) Draw() {
 		} else {
 			line = ""
 		}
-		log.Printf("Writing %s\n", line)
 
 		WriteFill(line, t.rect.w)
 
@@ -92,13 +92,35 @@ func (t *TextView) ScrollRight() {
 	}
 }
 
+func (t *TextView) ScrollPageFwd() {
+
+	var ypos int = int(t.ypos) + int(t.rect.h)
+
+	var length = len(t.text)
+
+	if ypos+int(t.rect.h) > length-1 {
+		ypos = length - int(t.rect.h) - 1
+	}
+
+	t.ypos = uint8(ypos)
+}
+
+func (t *TextView) ScrollPageBack() {
+	var ypos int = util.Max(0, int(t.ypos)-int(t.rect.h))
+	t.ypos = uint8(ypos)
+}
+
 func (t *TextView) HandleInput(input input.KeyInput) {
 
 	switch input.GetKey() {
 	case keyboard.KeyArrowDown:
 		t.ScrollFwd()
+	case keyboard.KeyPgup:
+		t.ScrollPageBack()
 	case keyboard.KeyArrowUp:
 		t.ScrollBack()
+	case keyboard.KeyPgdn:
+		t.ScrollPageFwd()
 	case keyboard.KeyArrowLeft:
 		t.ScrollLeft()
 	case keyboard.KeyArrowRight:

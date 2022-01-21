@@ -22,11 +22,19 @@ func TitledContainerNew(title string, child View, border bool) *TitledContainer 
 
 func (t *TitledContainer) SetRect(rect Rect) {
 	t.ViewImpl.SetRect(rect)
+
 	var padding uint8 = 0
+
 	if t.border {
 		padding = 1
 	}
-	t.child.SetRect(Rect{x: rect.x + padding, y: rect.y + 1, w: rect.w - (padding * 2), h: rect.h - 1 - padding})
+
+	t.child.SetRect(
+		Rect{
+			x: rect.x + padding,
+			y: rect.y + 1,
+			w: rect.w - (padding * 2),
+			h: rect.h - 1 - padding})
 }
 
 func (t *TitledContainer) Draw() {
