@@ -2,9 +2,9 @@ package ui
 
 import (
 	"container/list"
-	"log"
 	"time"
 
+	"github.com/clidockermgr/input"
 	"github.com/eiannone/keyboard"
 )
 
@@ -25,6 +25,7 @@ func (a *Application) Add(view View) {
 	if empty {
 		a.currentElement = a.children.Front()
 	}
+	view.AddRedrawListener(a.RedrawRequested)
 }
 
 func (a *Application) ShowPopup(view View) {
@@ -54,25 +55,28 @@ func (a *Application) CurrentView() View {
 }
 
 func (a *Application) CheckInput() {
-	log.Print("Checking input \n")
-	input, key, err := keyboard.GetSingleKey()
+	input, err := input.GetKeyInput()
 
 	if err != nil {
 		panic(err)
 	}
+	key := input.GetKey()
 	switch key {
 	case keyboard.KeyTab:
 		a.CycleCurrent()
 	case keyboard.KeyEsc:
-		a.running = false
-	default:
-		log.Printf("key typed: %c %d\n", input, key)
 		if a.currentPopup != nil {
-			a.currentPopup.HandleInput(key)
+			a.ClosePopup()
+		} else {
+			a.running = false
+		}
+	default:
+		if a.currentPopup != nil {
+			a.currentPopup.HandleInput(input)
 		} else {
 			var currentView = a.CurrentView()
 			if currentView != nil {
-				currentView.HandleInput(key)
+				currentView.HandleInput(input)
 			}
 		}
 	}
@@ -90,6 +94,11 @@ func (a *Application) DrawAll() {
 			}
 		}
 	}
+}
+
+func (a *Application) RedrawRequested(view interface{}) {
+	// TODO: only redraw component
+	a.DrawAll()
 }
 
 func (a *Application) Loop() {

@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 
+	"github.com/clidockermgr/input"
 	"github.com/eiannone/keyboard"
 )
 
@@ -119,22 +120,33 @@ func (l *List) Draw() {
 	}
 }
 
-func (l *List) HandleInput(key keyboard.Key) {
+func (l *List) ScrollBack() {
+	if l.selectedIndex < l.model.ItemCount()-1 {
+		l.selectedIndex++
+	}
+}
 
-	switch key {
+func (l *List) ScrollFwd() {
+	if l.selectedIndex > 0 {
+		l.selectedIndex--
+	}
+	if l.startIndex > 0 {
+		l.startIndex--
+	}
+}
+
+func (l *List) HandleInput(input input.KeyInput) {
+
+	switch input.GetKey() {
 	case keyboard.KeyArrowDown:
-		if l.selectedIndex < l.model.ItemCount()-1 {
-			l.selectedIndex++
-		}
+		l.ScrollBack()
 	case keyboard.KeyArrowUp:
-		if l.selectedIndex > 0 {
-			l.selectedIndex--
-		}
+		l.ScrollFwd()
 	default:
-		l.ViewImpl.HandleInput(key)
+		l.ViewImpl.HandleInput(input)
 	}
 }
 
 func (l *List) Changed() {
-	l.Draw()
+	l.RequestRedraw()
 }

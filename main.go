@@ -7,18 +7,42 @@ import (
 	"os"
 
 	docker "github.com/clidockermgr/docker"
+	"github.com/clidockermgr/input"
 	ui "github.com/clidockermgr/ui"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/eiannone/keyboard"
 )
 
+func ShowTextPopup(app *ui.Application, title string, text string) {
+
+	maxWidth, maxHeight := ui.ScreenSize()
+
+	popupWidth := uint8(float32(maxWidth) * 0.75)
+	popupHeight := uint8(float32(maxHeight) * 0.8)
+
+	textView := ui.TextViewNew(text)
+	container := ui.TitledContainerNew(title, textView, true)
+	container.SetRect(ui.RectNew((maxWidth-popupWidth)/2, (maxHeight-popupHeight)/2, popupWidth, popupHeight))
+
+	app.ShowPopup(container)
+}
+
 func ShowContainerInspect(app *ui.Application, inspect types.ContainerJSON) {
 
 	result, err := json.MarshalIndent(inspect, "", "    ")
 	if err == nil {
 		var strResult = string(result)
-		log.Print(strResult)
+		ShowTextPopup(app, "Container Details", strResult)
+	}
+}
+
+func ShowImageInspect(app *ui.Application, inspect types.ImageInspect) {
+	result, err := json.MarshalIndent(inspect, "", "    ")
+
+	if err == nil {
+		var strResult = string(result)
+		ShowTextPopup(app, "Image Details", strResult)
 	}
 }
 
@@ -36,18 +60,18 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 	var containerList = ui.ListNew()
 	containerList.SetModel(docker.ContainerListModelNew(client))
 
-	containerList.AddKeyHandler(keyboard.KeyCtrlV, func(keyboard.Key) {
+	containerList.AddKeyHandler(input.KeyInputKey(keyboard.KeyCtrlV), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		inspect, err := client.ContainerInspect(context.Background(), item.ID)
 		if err == nil {
 			ShowContainerInspect(app, inspect)
 		}
 	})
-	containerList.AddKeyHandler(keyboard.KeyCtrlK, func(keyboard.Key) {
+	containerList.AddKeyHandler(input.KeyInputKey(keyboard.KeyCtrlK), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		client.ContainerKill(context.Background(), item.ID, "9")
 	})
-	containerList.AddKeyHandler(keyboard.KeyDelete, func(keyboard.Key) {
+	containerList.AddKeyHandler(input.KeyInputKey(keyboard.KeyDelete), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		client.ContainerDiff(context.Background(), item.ID)
 	})
@@ -61,7 +85,16 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 func BuildImagesView(app *ui.Application, client *client.Client, width uint8, height uint8) {
 	var imageList = ui.ListNew()
 	imageList.SetModel(docker.ImagesListModelNew(client))
-	imageList.AddKeyHandler(keyboard.KeyDelete, func(keyboard.Key) {
+
+	imageList.AddKeyHandler(input.KeyInputKey(keyboard.KeyCtrlV), func(input.KeyInput) {
+		var item = imageList.SelectedItem().Value().(*types.ImageSummary)
+		inspect, _, err := client.ImageInspectWithRaw(context.Background(), item.ID)
+		if err == nil {
+			ShowImageInspect(app, inspect)
+		}
+	})
+
+	imageList.AddKeyHandler(input.KeyInputKey(keyboard.KeyDelete), func(input.KeyInput) {
 		var item = imageList.SelectedItem().Value().(*types.ImageSummary)
 		client.ImageRemove(context.Background(), item.ID, types.ImageRemoveOptions{})
 	})

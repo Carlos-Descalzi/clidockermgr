@@ -1,7 +1,9 @@
 package ui
 
 import (
-	"github.com/eiannone/keyboard"
+	"container/list"
+
+	"github.com/clidockermgr/input"
 )
 
 type Rect struct {
@@ -11,7 +13,8 @@ type Rect struct {
 	h uint8
 }
 
-type KeyHandler func(keyboard.Key)
+type KeyHandler func(input.KeyInput)
+type RedrawListener func(view interface{})
 
 func RectNew(x uint8, y uint8, w uint8, h uint8) Rect {
 	return Rect{x, y, w, h}
@@ -24,9 +27,10 @@ type View interface {
 	SetRect(rect Rect)
 	SetVisible(visible bool)
 	SetFocusable(focusable bool)
-	HandleInput(key keyboard.Key)
+	HandleInput(input input.KeyInput)
 	SetFocused(focused bool)
-	AddKeyHandler(key keyboard.Key, handler KeyHandler)
+	AddKeyHandler(input input.KeyInput, handler KeyHandler)
+	AddRedrawListener(listener RedrawListener)
 	IsFocusable() bool
 	Draw()
 }
@@ -39,11 +43,13 @@ type ViewImpl struct {
 	visible   bool
 	focusable bool
 	focused   bool
-	handlers  map[keyboard.Key]KeyHandler
+	handlers  map[input.KeyInput]KeyHandler
+	listeners *list.List
 }
 
 func (v *ViewImpl) Init() {
-	v.handlers = make(map[keyboard.Key]KeyHandler)
+	v.handlers = make(map[input.KeyInput]KeyHandler)
+	v.listeners = list.New()
 }
 
 func (v *ViewImpl) SetRect(rect Rect) {
@@ -58,11 +64,11 @@ func (v *ViewImpl) SetVisible(visible bool) {
 	v.visible = visible
 }
 
-func (v *ViewImpl) HandleInput(key keyboard.Key) {
-	var handler = v.handlers[key]
+func (v *ViewImpl) HandleInput(input input.KeyInput) {
+	var handler = v.handlers[input]
 
 	if handler != nil {
-		handler(key)
+		handler(input)
 	}
 }
 
@@ -74,6 +80,16 @@ func (v ViewImpl) IsFocusable() bool {
 	return v.focusable
 }
 
-func (v *ViewImpl) AddKeyHandler(key keyboard.Key, handler KeyHandler) {
+func (v *ViewImpl) AddKeyHandler(key input.KeyInput, handler KeyHandler) {
 	v.handlers[key] = handler
+}
+
+func (v *ViewImpl) AddRedrawListener(listener RedrawListener) {
+	v.listeners.PushBack(listener)
+}
+
+func (v *ViewImpl) RequestRedraw() {
+	for i := v.listeners.Front(); i != nil; i = i.Next() {
+		i.Value.(RedrawListener)(v)
+	}
 }

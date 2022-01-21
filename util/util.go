@@ -2,14 +2,14 @@ package util
 
 import "fmt"
 
-func Max(v1 uint32, v2 uint32) uint32 {
+func Max(v1 int, v2 int) int {
 	if v1 > v2 {
 		return v1
 	}
 	return v2
 }
 
-func Min(v1 uint32, v2 uint32) uint32 {
+func Min(v1 int, v2 int) int {
 	if v1 < v2 {
 		return v1
 	}

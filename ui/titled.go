@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"github.com/eiannone/keyboard"
+	"github.com/clidockermgr/input"
 )
 
 /**
@@ -48,8 +48,8 @@ func (t *TitledContainer) SetFocusable(focusable bool) {
 	t.child.SetFocusable(focusable)
 }
 
-func (t *TitledContainer) HandleInput(key keyboard.Key) {
-	t.child.HandleInput(key)
+func (t *TitledContainer) HandleInput(input input.KeyInput) {
+	t.child.HandleInput(input)
 }
 
 func (t *TitledContainer) SetFocused(focused bool) {
