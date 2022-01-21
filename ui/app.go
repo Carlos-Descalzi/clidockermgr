@@ -2,7 +2,6 @@ package ui
 
 import (
 	"container/list"
-	"time"
 
 	"github.com/clidockermgr/input"
 	"github.com/eiannone/keyboard"
@@ -109,7 +108,7 @@ func (a *Application) Loop() {
 	for a.running {
 		a.CheckInput()
 		a.DrawAll()
-		time.Sleep(time.Duration(10))
+		//time.Sleep(time.Duration(10))
 	}
 	CursorOn()
 	ClearScreen()

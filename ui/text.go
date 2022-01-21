@@ -29,11 +29,29 @@ func TextViewNew(text string) *TextView {
 
 func (t *TextView) Draw() {
 	var y uint8 = 0
-	for v := 0; v < len(t.text); v++ {
+
+	var firstLine = t.ypos
+	var lastLine = t.ypos + t.rect.h - 1
+
+	var length = uint8(len(t.text))
+
+	if lastLine >= length {
+		lastLine = length - 1
+		firstLine = lastLine - t.rect.h
+	}
+
+	for v := firstLine; v <= lastLine; v++ {
 
 		GotoXY(t.rect.x, t.rect.y+y)
 
-		WriteFill(t.text[v], t.rect.w)
+		var line = t.text[v]
+		if t.xpos < uint8(len(line)) {
+			line = line[t.xpos:]
+		} else {
+			line = ""
+		}
+
+		WriteFill(line, t.rect.w)
 
 		y++
 		if y >= t.rect.h {
@@ -49,7 +67,9 @@ func (t *TextView) ScrollBack() {
 }
 
 func (t *TextView) ScrollFwd() {
-	t.ypos++
+	if t.ypos+t.rect.h < uint8(len(t.text))-1 {
+		t.ypos++
+	}
 }
 
 func (t *TextView) ScrollLeft() {
@@ -59,7 +79,9 @@ func (t *TextView) ScrollLeft() {
 }
 
 func (t *TextView) ScrollRight() {
-	t.xpos++
+	if t.xpos+t.rect.w < t.maxWidth {
+		t.xpos++
+	}
 }
 
 func (t *TextView) HandleInput(input input.KeyInput) {
