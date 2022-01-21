@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -15,17 +16,19 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
-const HelpText = "Keys:\n\n" +
-	"    tab: Switch focus between UI elements\n" +
-	"    ESC: Closes active popup, or exits the application\n\n" +
-	"    Container view:\n" +
-	"        v: Displays container information\n" +
-	"        k: Kills a container\n" +
-	"        delete: Deletes a container\n" +
-	"        s: Opens a shell in a container\n\n" +
-	"    Images view:\n" +
-	"        v: Displays image information\n" +
-	"        delete: Deletes an image"
+const HelpText = `Keys:
+
+    tab: Switch focus between UI elements
+    ESC: Closes active popup, or exits the application
+    Container view:
+        v: Displays container information
+        k: Kills a container
+        delete: Deletes a container
+        s: Opens a shell in a container
+    Images view:
+        v: Displays image information
+        delete: Deletes an image
+`
 
 func ShowTextPopup(app *ui.Application, title string, text string) {
 
@@ -74,6 +77,23 @@ func OpenShell(containerId string) {
 	ui.CursorOff()
 }
 
+func ShowLogs(app *ui.Application, client *client.Client, containerId string) {
+
+	var reader, err = client.ContainerLogs(context.Background(), containerId, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
+
+	if err == nil {
+		var result, err2 = ioutil.ReadAll(reader)
+
+		if err2 == nil {
+			ShowTextPopup(app, "Logs", string(result))
+		} else {
+			log.Print(err2)
+		}
+	} else {
+		log.Print(err)
+	}
+}
+
 func SetupLog() {
 	var logfile, err = os.OpenFile("dockermgr.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 
@@ -102,6 +122,10 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 	containerList.AddKeyHandler(input.KeyInputChar('s'), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		OpenShell(item.ID)
+	})
+	containerList.AddKeyHandler(input.KeyInputChar('l'), func(input.KeyInput) {
+		var item = containerList.SelectedItem().Value().(*types.Container)
+		ShowLogs(app, client, item.ID)
 	})
 	containerList.AddKeyHandler(input.KeyInputKey(keyboard.KeyDelete), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
