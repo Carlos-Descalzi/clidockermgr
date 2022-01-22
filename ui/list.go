@@ -25,13 +25,14 @@ type ListModel interface {
 	ItemCount() int
 	Item(index int) ListItem
 	AddListener(listener ListModelListener)
+	SetProperty(property int, value interface{})
+	Update()
 }
 
 /**
 	A default empty list model
 **/
-type EmptyModel struct {
-}
+type EmptyModel struct{}
 
 func (m EmptyModel) ItemCount() int {
 	return 0
@@ -41,9 +42,11 @@ func (m EmptyModel) Item(index int) ListItem {
 	return nil
 }
 
-func (m EmptyModel) AddListener(listener ListModelListener) {
+func (m EmptyModel) AddListener(listener ListModelListener) {}
 
-}
+func (m EmptyModel) SetProperty(property int, value interface{}) {}
+
+func (m EmptyModel) Update() {}
 
 /**
 	A base list model struct which implements
@@ -57,7 +60,7 @@ func (m *BaseListModel) Init() {
 	m.listeners = list.New()
 }
 
-func (m *BaseListModel) AddListener(listener ListModelListener) {
+func (m BaseListModel) AddListener(listener ListModelListener) {
 	m.listeners.PushBack(listener)
 }
 
@@ -67,31 +70,42 @@ func (m BaseListModel) NotifyChanged() {
 	}
 }
 
+func (m *BaseListModel) SetProperty(property int, value interface{}) {}
+
+func (m *BaseListModel) Update() {}
+
 /**
 	A list component
 **/
 type List struct {
 	ViewImpl
-	model         ListModel
+	Model         ListModel
 	startIndex    int
 	selectedIndex int
 }
 
 func ListNew() *List {
-	var list = List{model: &EmptyModel{}}
+	var list = List{Model: &EmptyModel{}}
 	list.Init()
 	return &list
 }
 
 func (l *List) SetModel(model ListModel) {
-	l.model = model
-	if l.model != nil {
-		l.model.AddListener(l.Changed)
+	l.Model = model
+	if l.Model != nil {
+		l.Model.AddListener(l.Changed)
+	}
+}
+
+func (l *List) Update() {
+	l.Model.Update()
+	if l.selectedIndex > l.Model.ItemCount() {
+		l.selectedIndex = l.Model.ItemCount() - 1
 	}
 }
 
 func (l *List) SelectedItem() ListItem {
-	return l.model.Item(l.selectedIndex)
+	return l.Model.Item(l.selectedIndex)
 }
 
 func (l *List) Draw() {
@@ -99,39 +113,40 @@ func (l *List) Draw() {
 
 	var y uint8 = 0
 
-	for i := l.startIndex; i < l.model.ItemCount(); i++ {
+	for i := l.startIndex; i < l.Model.ItemCount() && y <= l.rect.h; i++ {
 		GotoXY(l.rect.x, l.rect.y+y)
-		var text = l.model.Item(i)
+		var text = l.Model.Item(i)
 		if l.focused && l.selectedIndex == i {
 			UnderlineOn()
 		}
 		WriteFill(text.String(), l.rect.w)
 		Reset()
 		y++
-		if y >= l.rect.h {
-			break
-		}
 	}
 	if y < l.rect.h {
-		for ; y < l.rect.h; y++ {
+		for ; y <= l.rect.h; y++ {
 			GotoXY(l.rect.x, l.rect.y+y)
 			WriteFill("", l.rect.w)
 		}
 	}
 }
 
-func (l *List) ScrollBack() {
-	if l.selectedIndex < l.model.ItemCount()-1 {
+func (l *List) ScrollFwd() {
+	if l.selectedIndex < l.Model.ItemCount()-1 {
 		l.selectedIndex++
+
+		if l.selectedIndex-l.startIndex > int(l.rect.h) {
+			l.startIndex++
+		}
 	}
 }
 
-func (l *List) ScrollFwd() {
+func (l *List) ScrollBack() {
 	if l.selectedIndex > 0 {
 		l.selectedIndex--
 	}
-	if l.startIndex > 0 {
-		l.startIndex--
+	if l.startIndex > l.selectedIndex {
+		l.startIndex = l.selectedIndex
 	}
 }
 
@@ -139,9 +154,9 @@ func (l *List) HandleInput(input input.KeyInput) {
 
 	switch input.GetKey() {
 	case keyboard.KeyArrowDown:
-		l.ScrollBack()
-	case keyboard.KeyArrowUp:
 		l.ScrollFwd()
+	case keyboard.KeyArrowUp:
+		l.ScrollBack()
 	default:
 		l.ViewImpl.HandleInput(input)
 	}

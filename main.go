@@ -44,21 +44,14 @@ func ShowTextPopup(app *ui.Application, title string, text string) {
 	app.ShowPopup(container)
 }
 
-func ShowContainerInspect(app *ui.Application, inspect types.ContainerJSON) {
-
-	result, err := json.MarshalIndent(inspect, "", "    ")
+func ShowContainerInspect(app *ui.Application, client *client.Client, containerId string) {
+	inspect, err := client.ContainerInspect(context.Background(), containerId)
 	if err == nil {
-		var strResult = string(result)
-		ShowTextPopup(app, "Container Details", strResult)
-	}
-}
-
-func ShowImageInspect(app *ui.Application, inspect types.ImageInspect) {
-	result, err := json.MarshalIndent(inspect, "", "    ")
-
-	if err == nil {
-		var strResult = string(result)
-		ShowTextPopup(app, "Image Details", strResult)
+		result, err := json.MarshalIndent(inspect, "", "    ")
+		if err == nil {
+			var strResult = string(result)
+			ShowTextPopup(app, "Container Details", strResult)
+		}
 	}
 }
 
@@ -66,8 +59,8 @@ func ShowHelp(app *ui.Application) {
 	ShowTextPopup(app, "Help", HelpText)
 }
 
-func OpenShell(containerId string) {
-	var cmd = exec.Command("docker", "exec", "-it", containerId, "sh")
+func RunCommand(command string, args ...string) {
+	var cmd = exec.Command(command, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -75,6 +68,18 @@ func OpenShell(containerId string) {
 	ui.ClearScreen()
 	cmd.Run()
 	ui.CursorOff()
+}
+
+func DoExecContainer(containerId string, command string) {
+	RunCommand("docker", "exec", "-it", containerId, command)
+}
+
+func ExecShell(containerId string) {
+	DoExecContainer(containerId, "sh")
+}
+
+func ExecBashShell(containerId string) {
+	DoExecContainer(containerId, "bash")
 }
 
 func ShowLogs(app *ui.Application, client *client.Client, containerId string) {
@@ -106,22 +111,30 @@ func SetupLog() {
 
 func BuildContainersView(app *ui.Application, client *client.Client, width uint8, height uint8) {
 	var containerList = ui.ListNew()
+
 	containerList.SetModel(docker.ContainerListModelNew(client))
 
 	containerList.AddKeyHandler(input.KeyInputChar('v'), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
-		inspect, err := client.ContainerInspect(context.Background(), item.ID)
-		if err == nil {
-			ShowContainerInspect(app, inspect)
-		}
+		ShowContainerInspect(app, client, item.ID)
 	})
 	containerList.AddKeyHandler(input.KeyInputChar('k'), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		client.ContainerKill(context.Background(), item.ID, "9")
+		containerList.Update()
+	})
+	containerList.AddKeyHandler(input.KeyInputChar('d'), func(input.KeyInput) {
+		var item = containerList.SelectedItem().Value().(*types.Container)
+		client.ContainerRemove(context.Background(), item.ID, types.ContainerRemoveOptions{})
+		containerList.Update()
 	})
 	containerList.AddKeyHandler(input.KeyInputChar('s'), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
-		OpenShell(item.ID)
+		ExecShell(item.ID)
+	})
+	containerList.AddKeyHandler(input.KeyInputChar('b'), func(input.KeyInput) {
+		var item = containerList.SelectedItem().Value().(*types.Container)
+		ExecBashShell(item.ID)
 	})
 	containerList.AddKeyHandler(input.KeyInputChar('l'), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
@@ -130,6 +143,9 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 	containerList.AddKeyHandler(input.KeyInputKey(keyboard.KeyDelete), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		client.ContainerRemove(context.Background(), item.ID, types.ContainerRemoveOptions{})
+	})
+	containerList.AddKeyHandler(input.KeyInputChar('a'), func(input.KeyInput) {
+		containerList.Model.SetProperty(docker.ContainerListModelOnlyActive, nil)
 	})
 	containerList.AddKeyHandler(input.KeyInputChar('h'), func(input.KeyInput) {
 		ShowHelp(app)
@@ -141,20 +157,68 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 
 }
 
+func ShowImageInspect(app *ui.Application, client *client.Client, imageId string) {
+
+	inspect, _, err := client.ImageInspectWithRaw(context.Background(), imageId)
+	if err == nil {
+		result, err := json.MarshalIndent(inspect, "", "    ")
+
+		if err == nil {
+			var strResult = string(result)
+			ShowTextPopup(app, "Image Details", strResult)
+		}
+	}
+
+}
+
+func RemoveImage(app *ui.Application, client *client.Client, imageId string) {
+	_, err := client.ImageRemove(context.Background(), imageId, types.ImageRemoveOptions{})
+
+	if err != nil {
+		log.Print(err)
+	}
+}
+
+func DoRunImage(image types.ImageSummary, command string) {
+	var name = ""
+
+	if len(image.RepoTags) > 0 {
+		name = image.RepoTags[len(image.RepoTags)-1]
+	} else {
+		name = image.ID
+	}
+
+	RunCommand("docker", "run", "-it", "--entrypoint", command, name)
+}
+
+func RunShell(image types.ImageSummary) {
+	DoRunImage(image, "sh")
+}
+
+func RunBashShell(image types.ImageSummary) {
+	DoRunImage(image, "bash")
+}
+
 func BuildImagesView(app *ui.Application, client *client.Client, width uint8, height uint8) {
 	var imageList = ui.ListNew()
 	imageList.SetModel(docker.ImagesListModelNew(client))
 
 	imageList.AddKeyHandler(input.KeyInputChar('v'), func(input.KeyInput) {
 		var item = imageList.SelectedItem().Value().(*types.ImageSummary)
-		inspect, _, err := client.ImageInspectWithRaw(context.Background(), item.ID)
-		if err == nil {
-			ShowImageInspect(app, inspect)
-		}
+		ShowImageInspect(app, client, item.ID)
 	})
 	imageList.AddKeyHandler(input.KeyInputKey(keyboard.KeyDelete), func(input.KeyInput) {
 		var item = imageList.SelectedItem().Value().(*types.ImageSummary)
-		client.ImageRemove(context.Background(), item.ID, types.ImageRemoveOptions{})
+		RemoveImage(app, client, item.ID)
+		imageList.Update()
+	})
+	imageList.AddKeyHandler(input.KeyInputChar('s'), func(input.KeyInput) {
+		var item = imageList.SelectedItem().Value().(*types.ImageSummary)
+		RunShell(*item)
+	})
+	imageList.AddKeyHandler(input.KeyInputChar('b'), func(input.KeyInput) {
+		var item = imageList.SelectedItem().Value().(*types.ImageSummary)
+		RunBashShell(*item)
 	})
 	imageList.AddKeyHandler(input.KeyInputChar('h'), func(input.KeyInput) {
 		ShowHelp(app)
