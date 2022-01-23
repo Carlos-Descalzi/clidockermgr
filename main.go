@@ -1,9 +1,6 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -44,15 +41,9 @@ func ShowTextPopup(app *ui.Application, title string, text string) {
 	app.ShowPopup(container)
 }
 
-func ShowContainerInspect(app *ui.Application, client *client.Client, containerId string) {
-	inspect, err := client.ContainerInspect(context.Background(), containerId)
-	if err == nil {
-		result, err := json.MarshalIndent(inspect, "", "    ")
-		if err == nil {
-			var strResult = string(result)
-			ShowTextPopup(app, "Container Details", strResult)
-		}
-	}
+func ShowContainerInspect(app *ui.Application, client *docker.ServiceHandler, containerId string) {
+	strResult := client.InspectContainer(containerId)
+	ShowTextPopup(app, "Container Details", strResult)
 }
 
 func ShowHelp(app *ui.Application) {
@@ -82,21 +73,10 @@ func ExecBashShell(containerId string) {
 	DoExecContainer(containerId, "bash")
 }
 
-func ShowLogs(app *ui.Application, client *client.Client, containerId string) {
+func ShowLogs(app *ui.Application, client *docker.ServiceHandler, containerId string) {
 
-	var reader, err = client.ContainerLogs(context.Background(), containerId, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
-
-	if err == nil {
-		var result, err2 = ioutil.ReadAll(reader)
-
-		if err2 == nil {
-			ShowTextPopup(app, "Logs", string(result))
-		} else {
-			log.Print(err2)
-		}
-	} else {
-		log.Print(err)
-	}
+	logs := client.Logs(containerId)
+	ShowTextPopup(app, "Logs", logs)
 }
 
 func SetupLog() {
@@ -109,7 +89,7 @@ func SetupLog() {
 
 }
 
-func BuildContainersView(app *ui.Application, client *client.Client, width uint8, height uint8) {
+func BuildContainersView(app *ui.Application, client *docker.ServiceHandler, width uint8, height uint8) {
 	var containerList = ui.ListNew()
 
 	containerList.SetModel(docker.ContainerListModelNew(client))
@@ -120,12 +100,7 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 	})
 	containerList.AddKeyHandler(input.KeyInputChar('k'), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
-		client.ContainerKill(context.Background(), item.ID, "9")
-		containerList.Update()
-	})
-	containerList.AddKeyHandler(input.KeyInputChar('d'), func(input.KeyInput) {
-		var item = containerList.SelectedItem().Value().(*types.Container)
-		client.ContainerRemove(context.Background(), item.ID, types.ContainerRemoveOptions{})
+		client.KillContainer(item.ID)
 		containerList.Update()
 	})
 	containerList.AddKeyHandler(input.KeyInputChar('s'), func(input.KeyInput) {
@@ -142,7 +117,8 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 	})
 	containerList.AddKeyHandler(input.KeyInputKey(keyboard.KeyDelete), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
-		client.ContainerRemove(context.Background(), item.ID, types.ContainerRemoveOptions{})
+		client.RemoveContainer(item.ID)
+		containerList.Update()
 	})
 	containerList.AddKeyHandler(input.KeyInputChar('a'), func(input.KeyInput) {
 		containerList.Model.SetProperty(docker.ContainerListModelOnlyActive, nil)
@@ -157,26 +133,9 @@ func BuildContainersView(app *ui.Application, client *client.Client, width uint8
 
 }
 
-func ShowImageInspect(app *ui.Application, client *client.Client, imageId string) {
-
-	inspect, _, err := client.ImageInspectWithRaw(context.Background(), imageId)
-	if err == nil {
-		result, err := json.MarshalIndent(inspect, "", "    ")
-
-		if err == nil {
-			var strResult = string(result)
-			ShowTextPopup(app, "Image Details", strResult)
-		}
-	}
-
-}
-
-func RemoveImage(app *ui.Application, client *client.Client, imageId string) {
-	_, err := client.ImageRemove(context.Background(), imageId, types.ImageRemoveOptions{})
-
-	if err != nil {
-		log.Print(err)
-	}
+func ShowImageInspect(app *ui.Application, client *docker.ServiceHandler, imageId string) {
+	result := client.InspectImage(imageId)
+	ShowTextPopup(app, "Image Details", result)
 }
 
 func DoRunImage(image types.ImageSummary, command string) {
@@ -199,7 +158,7 @@ func RunBashShell(image types.ImageSummary) {
 	DoRunImage(image, "bash")
 }
 
-func BuildImagesView(app *ui.Application, client *client.Client, width uint8, height uint8) {
+func BuildImagesView(app *ui.Application, client *docker.ServiceHandler, width uint8, height uint8) {
 	var imageList = ui.ListNew()
 	imageList.SetModel(docker.ImagesListModelNew(client))
 
@@ -209,7 +168,7 @@ func BuildImagesView(app *ui.Application, client *client.Client, width uint8, he
 	})
 	imageList.AddKeyHandler(input.KeyInputKey(keyboard.KeyDelete), func(input.KeyInput) {
 		var item = imageList.SelectedItem().Value().(*types.ImageSummary)
-		RemoveImage(app, client, item.ID)
+		client.RemoveImage(item.ID)
 		imageList.Update()
 	})
 	imageList.AddKeyHandler(input.KeyInputChar('s'), func(input.KeyInput) {
@@ -235,6 +194,9 @@ func main() {
 
 	client, err1 := client.NewClientWithOpts(client.FromEnv)
 
+	service := docker.ServiceHandlerNew(client)
+	service.RemoveContainer("")
+
 	if err1 != nil {
 		panic(err1)
 	}
@@ -243,8 +205,8 @@ func main() {
 
 	var app = ui.ApplicationNew()
 
-	BuildContainersView(app, client, maxWidth, areaHeight)
-	BuildImagesView(app, client, maxWidth, areaHeight)
+	BuildContainersView(app, service, maxWidth, areaHeight)
+	BuildImagesView(app, service, maxWidth, areaHeight)
 
 	app.Loop()
 

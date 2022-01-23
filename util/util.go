@@ -1,7 +1,12 @@
 package util
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"io"
+
+	"github.com/docker/docker/api/types"
 )
 
 func Max(v1, v2 int) int {
@@ -44,4 +49,16 @@ func FormatMemory(amount int) string {
 		return fmt.Sprintf("%.2f GB", float32(amount)/GB)
 	}
 	return fmt.Sprintf("%.2f TB", float32(amount)/TB)
+}
+
+func ParseStats(statsBody []byte) *types.Stats {
+	var stats types.Stats
+	json.Unmarshal(statsBody, &stats)
+	return &stats
+}
+
+func ParseStatsBody(body io.ReadCloser) *types.Stats {
+	var buf = bufio.NewReader(body)
+	var result, _ = buf.ReadBytes(byte(0))
+	return ParseStats(result)
 }

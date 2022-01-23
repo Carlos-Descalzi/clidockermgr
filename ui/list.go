@@ -34,19 +34,19 @@ type ListModel interface {
 **/
 type EmptyModel struct{}
 
-func (m EmptyModel) ItemCount() int {
+func (m *EmptyModel) ItemCount() int {
 	return 0
 }
 
-func (m EmptyModel) Item(index int) ListItem {
+func (m *EmptyModel) Item(index int) ListItem {
 	return nil
 }
 
-func (m EmptyModel) AddListener(listener ListModelListener) {}
+func (m *EmptyModel) AddListener(listener ListModelListener) {}
 
-func (m EmptyModel) SetProperty(property int, value interface{}) {}
+func (m *EmptyModel) SetProperty(property int, value interface{}) {}
 
-func (m EmptyModel) Update() {}
+func (m *EmptyModel) Update() {}
 
 /**
 	A base list model struct which implements
@@ -60,7 +60,7 @@ func (m *BaseListModel) Init() {
 	m.listeners = list.New()
 }
 
-func (m BaseListModel) AddListener(listener ListModelListener) {
+func (m *BaseListModel) AddListener(listener ListModelListener) {
 	m.listeners.PushBack(listener)
 }
 

@@ -1,15 +1,12 @@
 package docker
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/clidockermgr/ui"
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 )
 
 type ImageItem struct {
@@ -49,25 +46,20 @@ func (i ImageItem) String() string {
 
 type ImagesListModel struct {
 	ui.BaseListModel
-	dockerClient *client.Client
+	dockerClient *ServiceHandler
 	items        []types.ImageSummary
 }
 
-func ImagesListModelNew(dockerClient *client.Client) *ImagesListModel {
+func ImagesListModelNew(dockerClient *ServiceHandler) *ImagesListModel {
 	var model = ImagesListModel{dockerClient: dockerClient}
 	model.Init()
 	model.Update()
+	dockerClient.AddListener(&model)
 	return &model
 }
 
 func (m *ImagesListModel) Update() {
-	items, err := m.dockerClient.ImageList(context.Background(), types.ImageListOptions{})
-
-	if err != nil {
-		log.Printf("Error getting images: %s", err)
-	}
-
-	m.items = items
+	m.items = m.dockerClient.Images()
 }
 
 func (m ImagesListModel) ItemCount() int {
@@ -76,4 +68,10 @@ func (m ImagesListModel) ItemCount() int {
 
 func (m ImagesListModel) Item(index int) ui.ListItem {
 	return &ImageItem{m.items[index]}
+}
+func (m *ImagesListModel) ImagesUpdated() {
+	m.Update()
+	m.NotifyChanged()
+}
+func (m *ImagesListModel) ContainersUpdated() {
 }

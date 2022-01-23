@@ -2,6 +2,7 @@ package ui
 
 import (
 	"container/list"
+	"time"
 
 	"github.com/clidockermgr/input"
 	"github.com/eiannone/keyboard"
@@ -10,12 +11,19 @@ import (
 type Application struct {
 	children       *list.List
 	currentElement *list.Element
+	inputHandler   *input.InputHandler
 	running        bool
 	currentPopup   View
 }
 
 func ApplicationNew() *Application {
-	return &Application{children: list.New(), running: true, currentElement: nil, currentPopup: nil}
+	return &Application{
+		children:       list.New(),
+		running:        true,
+		currentElement: nil,
+		currentPopup:   nil,
+		inputHandler:   input.InputHandlerNew(),
+	}
 }
 
 func (a *Application) Add(view View) {
@@ -53,34 +61,34 @@ func (a *Application) CurrentView() View {
 	return (a.currentElement.Value.(View))
 }
 
-func (a *Application) CheckInput() {
-	input, err := input.GetKeyInput()
+func (a *Application) CheckInput() bool {
+	input, available := a.inputHandler.GetKeyInput()
 
-	if err != nil {
-		panic(err)
-	}
+	if available {
+		key := input.GetKey()
 
-	key := input.GetKey()
-
-	switch key {
-	case keyboard.KeyTab:
-		a.CycleCurrent()
-	case keyboard.KeyEsc:
-		if a.currentPopup != nil {
-			a.ClosePopup()
-		} else {
-			a.running = false
-		}
-	default:
-		if a.currentPopup != nil {
-			a.currentPopup.HandleInput(input)
-		} else {
-			var currentView = a.CurrentView()
-			if currentView != nil {
-				currentView.HandleInput(input)
+		switch key {
+		case keyboard.KeyTab:
+			a.CycleCurrent()
+		case keyboard.KeyEsc:
+			if a.currentPopup != nil {
+				a.ClosePopup()
+			} else {
+				a.running = false
+			}
+		default:
+			if a.currentPopup != nil {
+				a.currentPopup.HandleInput(input)
+			} else {
+				var currentView = a.CurrentView()
+				if currentView != nil {
+					currentView.HandleInput(input)
+				}
 			}
 		}
+		return true
 	}
+	return false
 }
 
 func (a *Application) DrawAll() {
@@ -104,15 +112,17 @@ func (a *Application) RedrawRequested(view interface{}) {
 }
 
 func (a *Application) Loop() {
-	keyboard.Open()
 	ClearScreen()
 	CursorOff()
 	a.DrawAll()
 	for a.running {
-		a.CheckInput()
+		hasEvents := a.CheckInput()
 		a.DrawAll()
-		//time.Sleep(time.Duration(10))
+		if !hasEvents {
+			time.Sleep(time.Duration(100 * time.Millisecond))
+		}
 	}
+	a.inputHandler.Close()
 	CursorOn()
 	ClearScreen()
 }

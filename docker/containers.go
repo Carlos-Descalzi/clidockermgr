@@ -1,18 +1,13 @@
 package docker
 
 import (
-	"bufio"
-	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	ui "github.com/clidockermgr/ui"
 	util "github.com/clidockermgr/util"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 )
 
 const (
@@ -56,46 +51,18 @@ func (i ContainerListModelItem) String() string {
 
 type ContainerListModel struct {
 	ui.BaseListModel
-	dockerClient *client.Client
-	items        []types.Container
-	stats        map[string]types.Stats
+	dockerClient *ServiceHandler
+	items        []ContainerSummary
 	onlyActive   bool
 	active       bool
 }
 
-func ParseStats(statsBody []byte) *types.Stats {
-	var stats types.Stats
-	json.Unmarshal(statsBody, &stats)
-	return &stats
-}
+func ContainerListModelNew(client *ServiceHandler) *ContainerListModel {
 
-func (model *ContainerListModel) UpdateStats() {
-	for model.active {
-		var items = model.items
-		for c := range items {
-			stats, err := model.dockerClient.ContainerStats(context.Background(), items[c].ID, false)
-			if err != nil {
-				log.Printf("Error getting stats %s", err)
-			} else {
-				var buf = bufio.NewReader(stats.Body)
-				var result, _ = buf.ReadBytes(byte(0))
-				var stats = ParseStats(result)
-				model.stats[items[c].ID] = *stats
-			}
-		}
-		model.NotifyChanged()
-		time.Sleep(time.Second)
-	}
-}
-
-func ContainerListModelNew(client *client.Client) *ContainerListModel {
-
-	var model = ContainerListModel{dockerClient: client, stats: make(map[string]types.Stats), active: true}
+	var model = ContainerListModel{dockerClient: client, active: true}
 	model.Init()
 	model.Update()
-
-	go model.UpdateStats()
-
+	client.AddListener(&model)
 	return &model
 }
 
@@ -108,15 +75,7 @@ func (m *ContainerListModel) SetProperty(property int, value interface{}) {
 }
 
 func (m *ContainerListModel) Update() {
-	items, err := m.dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: !m.onlyActive})
-
-	if err != nil {
-		log.Print(err)
-		m.items = []types.Container{}
-	} else {
-		m.items = items
-	}
-
+	m.items = m.dockerClient.Containers()
 	m.NotifyChanged()
 }
 
@@ -126,8 +85,15 @@ func (m ContainerListModel) ItemCount() int {
 
 func (m ContainerListModel) Item(index int) ui.ListItem {
 
-	var container = m.items[index]
-	var stats = m.stats[container.ID]
-
-	return &ContainerListModelItem{m.items[index], int(stats.MemoryStats.Usage), int(stats.MemoryStats.Limit)}
+	return &ContainerListModelItem{
+		m.items[index].container,
+		int(m.items[index].stats.MemoryStats.Usage),
+		int(m.items[index].stats.MemoryStats.Limit)}
+}
+func (m *ContainerListModel) ImagesUpdated() {
+}
+func (m *ContainerListModel) ContainersUpdated() {
+	m.Update()
+	log.Printf("Model changed %d", len(m.items))
+	m.NotifyChanged()
 }

@@ -1,6 +1,10 @@
 package input
 
-import "github.com/eiannone/keyboard"
+import (
+	"log"
+
+	"github.com/eiannone/keyboard"
+)
 
 type KeyInput struct {
 	key  keyboard.Key
@@ -27,12 +31,39 @@ func (k KeyInput) GetChar() rune {
 	return k.char
 }
 
-func GetKeyInput() (KeyInput, error) {
-	input, key, err := keyboard.GetSingleKey()
+type InputHandler struct {
+	active  bool
+	channel chan KeyInput
+}
 
-	if err != nil {
-		return KeyInput{}, err
+func InputHandlerNew() *InputHandler {
+	handler := InputHandler{active: true, channel: make(chan KeyInput, 100)}
+	go handler.RunCheck()
+	return &handler
+}
+
+func (i *InputHandler) RunCheck() {
+	keyboard.Open()
+	defer keyboard.Close()
+	for i.active {
+		input, key, err := keyboard.GetKey()
+		if err == nil {
+			i.channel <- KeyInput{key: key, char: input}
+		} else {
+			log.Print(err)
+		}
 	}
+}
 
-	return KeyInput{key: key, char: input}, nil
+func (i *InputHandler) GetKeyInput() (KeyInput, bool) {
+	if len(i.channel) > 0 {
+		return <-i.channel, true
+	}
+	return KeyInput{}, false
+}
+
+func (i *InputHandler) Close() {
+	keyboard.Close()
+	i.active = false
+	close(i.channel)
 }
