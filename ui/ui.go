@@ -31,6 +31,7 @@ type View interface {
 	IsFocusable() bool
 	Draw()
 	CheckRedrawFlag() bool
+	RequestRedraw()
 }
 
 /**

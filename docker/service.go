@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	util "github.com/clidockermgr/util"
+	"github.com/clidockermgr/util"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
@@ -71,8 +71,6 @@ func (s *ServiceHandler) Images() []types.ImageSummary {
 
 func (s *ServiceHandler) UpdateContainers() {
 	for s.active {
-		log.Print("Getting containers")
-
 		containers, err := s.client.ContainerList(context.Background(), types.ContainerListOptions{All: !s.activeContainers})
 
 		if err != nil {
@@ -86,9 +84,10 @@ func (s *ServiceHandler) UpdateContainers() {
 }
 
 func (s *ServiceHandler) DoUpdateContainers(containers []types.Container) {
-	var summaries []ContainerSummary
 
+	var summaries []ContainerSummary
 	var wg sync.WaitGroup
+
 	wg.Add(len(containers))
 
 	for i := range containers {
@@ -111,8 +110,6 @@ func (s *ServiceHandler) DoUpdateContainers(containers []types.Container) {
 
 func (s *ServiceHandler) UpdateImages() {
 	for s.active {
-		log.Print("Getting images")
-
 		images, err := s.client.ImageList(context.Background(), types.ImageListOptions{})
 
 		if err != nil {

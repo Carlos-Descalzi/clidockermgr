@@ -28,7 +28,6 @@ func ApplicationNew() *Application {
 
 func (a *Application) Add(view View) {
 	var empty = a.children.Len() == 0
-	//view.AddRedrawListener(a.RedrawRequested)
 	a.children.PushBack(view)
 	if empty {
 		a.currentElement = a.children.Front()
@@ -42,6 +41,7 @@ func (a *Application) ShowPopup(view View) {
 
 func (a *Application) ClosePopup() {
 	a.currentPopup = nil
+	a.MarkAllForRedraw()
 }
 
 func (a *Application) CycleCurrent() {
@@ -92,6 +92,12 @@ func (a *Application) CheckInput() bool {
 	return false
 }
 
+func (a *Application) MarkAllForRedraw() {
+	for v := a.children.Front(); v != nil; v = v.Next() {
+		v.Value.(View).RequestRedraw()
+	}
+}
+
 func (a *Application) DrawAll() {
 
 	if a.currentPopup != nil {
@@ -105,13 +111,6 @@ func (a *Application) DrawAll() {
 		}
 	}
 
-}
-
-func (a *Application) RedrawRequested(view interface{}) {
-	// TODO: only redraw component
-	//a.DrawAll()
-	//log.Print("Need redraw %x", a)
-	//a.needRedraw = true
 }
 
 func (a *Application) Loop() {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	ui "github.com/clidockermgr/ui"
-	util "github.com/clidockermgr/util"
+	"github.com/clidockermgr/ui"
+	"github.com/clidockermgr/util"
 
 	"github.com/docker/docker/api/types"
 )
