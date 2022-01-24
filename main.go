@@ -17,12 +17,17 @@ const HelpText = `Keys:
 
     tab: Switch focus between UI elements
     ESC: Closes active popup, or exits the application
+	h: Shows this help
     Container view:
         v: Displays container information
+        s: Opens a shell in a container
+        b: Opens a bash shell in a container, if command is present
+        l: Shows container log
         k: Kills a container
         delete: Deletes a container
-        s: Opens a shell in a container
     Images view:
+        s: Creates a container and runs shell for a given image
+        b: Creates a container and runs bash shell for a given image if command is present
         v: Displays image information
         delete: Deletes an image
 `

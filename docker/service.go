@@ -92,14 +92,15 @@ func (s *ServiceHandler) DoUpdateContainers(containers []types.Container) {
 	wg.Add(len(containers))
 
 	for i := range containers {
-		summaries = append(summaries, ContainerSummary{})
-		summaries[i].container = containers[i]
+		summaries = append(summaries, ContainerSummary{container: containers[i]})
 
 		go func(i int) {
 			defer wg.Done()
 			stats, err := s.client.ContainerStats(context.Background(), containers[i].ID, false)
-			if err != nil {
+			if err == nil {
 				summaries[i].stats = *util.ParseStatsBody(stats.Body)
+			} else {
+				log.Printf("Error getting stats for container %s %s", containers[i].ID, err)
 			}
 		}(i)
 
