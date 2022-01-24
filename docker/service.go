@@ -125,15 +125,27 @@ func (s *ServiceHandler) UpdateImages() {
 }
 
 func (s *ServiceHandler) RemoveImage(imageId string) {
-	s.client.ImageRemove(context.Background(), imageId, types.ImageRemoveOptions{})
+	_, err := s.client.ImageRemove(context.Background(), imageId, types.ImageRemoveOptions{})
+
+	if err != nil {
+		log.Print("Error removing image", err)
+	}
 }
 
 func (s *ServiceHandler) RemoveContainer(containerId string) {
-	s.client.ContainerRemove(context.Background(), containerId, types.ContainerRemoveOptions{})
+	err := s.client.ContainerRemove(context.Background(), containerId, types.ContainerRemoveOptions{})
+
+	if err != nil {
+		log.Print("Error removing container", err)
+	}
 }
 
 func (s *ServiceHandler) KillContainer(containerId string) {
-	s.client.ContainerKill(context.Background(), containerId, "9")
+	err := s.client.ContainerKill(context.Background(), containerId, "9")
+
+	if err != nil {
+		log.Print("Error killing container", err)
+	}
 }
 
 func (s *ServiceHandler) Logs(containerId string) string {
@@ -145,6 +157,8 @@ func (s *ServiceHandler) Logs(containerId string) string {
 		if err == nil {
 			return string(result)
 		}
+	} else {
+		log.Print("Error getting container logs", err)
 	}
 	return ""
 }
@@ -157,6 +171,8 @@ func (s *ServiceHandler) InspectImage(imageId string) string {
 		if err == nil {
 			return string(result)
 		}
+	} else {
+		log.Print("Error inspecting image", err)
 	}
 	return ""
 }
@@ -168,6 +184,8 @@ func (s *ServiceHandler) InspectContainer(containerId string) string {
 		if err == nil {
 			return string(result)
 		}
+	} else {
+		log.Print("Error inspecting container", err)
 	}
 	return ""
 }

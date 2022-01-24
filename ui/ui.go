@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"container/list"
-
 	"github.com/clidockermgr/input"
 )
 
@@ -30,9 +28,9 @@ type View interface {
 	HandleInput(input input.KeyInput)
 	SetFocused(focused bool)
 	AddKeyHandler(input input.KeyInput, handler KeyHandler)
-	AddRedrawListener(listener RedrawListener)
 	IsFocusable() bool
 	Draw()
+	CheckRedrawFlag() bool
 }
 
 /**
@@ -43,17 +41,18 @@ type ViewImpl struct {
 	visible   bool
 	focusable bool
 	focused   bool
+	dirty     bool
 	handlers  map[input.KeyInput]KeyHandler
-	listeners *list.List
 }
 
 func (v *ViewImpl) Init() {
 	v.handlers = make(map[input.KeyInput]KeyHandler)
-	v.listeners = list.New()
+	v.dirty = true
 }
 
 func (v *ViewImpl) SetRect(rect Rect) {
 	v.rect = rect
+	v.RequestRedraw()
 }
 
 func (v *ViewImpl) SetFocusable(focusable bool) {
@@ -62,6 +61,7 @@ func (v *ViewImpl) SetFocusable(focusable bool) {
 
 func (v *ViewImpl) SetVisible(visible bool) {
 	v.visible = visible
+	v.RequestRedraw()
 }
 
 func (v *ViewImpl) HandleInput(input input.KeyInput) {
@@ -74,6 +74,7 @@ func (v *ViewImpl) HandleInput(input input.KeyInput) {
 
 func (v *ViewImpl) SetFocused(focused bool) {
 	v.focused = focused
+	v.RequestRedraw()
 }
 
 func (v ViewImpl) IsFocusable() bool {
@@ -84,12 +85,12 @@ func (v *ViewImpl) AddKeyHandler(key input.KeyInput, handler KeyHandler) {
 	v.handlers[key] = handler
 }
 
-func (v *ViewImpl) AddRedrawListener(listener RedrawListener) {
-	v.listeners.PushBack(listener)
+func (v *ViewImpl) RequestRedraw() {
+	v.dirty = true
 }
 
-func (v *ViewImpl) RequestRedraw() {
-	for i := v.listeners.Front(); i != nil; i = i.Next() {
-		i.Value.(RedrawListener)(v)
-	}
+func (v *ViewImpl) CheckRedrawFlag() bool {
+	flag := v.dirty
+	v.dirty = false
+	return flag
 }

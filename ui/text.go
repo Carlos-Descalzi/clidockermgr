@@ -72,24 +72,28 @@ func (t *TextView) ScrollBack() {
 	if t.ypos > 0 {
 		t.ypos--
 	}
+	t.RequestRedraw()
 }
 
 func (t *TextView) ScrollFwd() {
 	if t.ypos+t.rect.h < uint8(len(t.text))-1 {
 		t.ypos++
 	}
+	t.RequestRedraw()
 }
 
 func (t *TextView) ScrollLeft() {
 	if t.xpos > 0 {
 		t.xpos--
 	}
+	t.RequestRedraw()
 }
 
 func (t *TextView) ScrollRight() {
 	if t.xpos+t.rect.w < t.maxWidth {
 		t.xpos++
 	}
+	t.RequestRedraw()
 }
 
 func (t *TextView) ScrollPageFwd() {
@@ -103,11 +107,13 @@ func (t *TextView) ScrollPageFwd() {
 	}
 
 	t.ypos = uint8(ypos)
+	t.RequestRedraw()
 }
 
 func (t *TextView) ScrollPageBack() {
 	var ypos int = util.Max(0, int(t.ypos)-int(t.rect.h))
 	t.ypos = uint8(ypos)
+	t.RequestRedraw()
 }
 
 func (t *TextView) HandleInput(input input.KeyInput) {

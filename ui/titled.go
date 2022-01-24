@@ -52,6 +52,10 @@ func (t *TitledContainer) Draw() {
 	t.child.Draw()
 }
 
+func (t *TitledContainer) CheckRedrawFlag() bool {
+	return t.ViewImpl.CheckRedrawFlag() || t.child.CheckRedrawFlag()
+}
+
 func (t *TitledContainer) SetFocusable(focusable bool) {
 	t.child.SetFocusable(focusable)
 }

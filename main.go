@@ -128,7 +128,7 @@ func BuildContainersView(app *ui.Application, client *docker.ServiceHandler, wid
 	})
 
 	var titledContainer1 = ui.TitledContainerNew("Containers", containerList, false)
-	titledContainer1.SetRect(ui.RectNew(1, 1, width, height))
+	titledContainer1.SetRect(ui.RectNew(1, 1, width, height-1))
 	app.Add(titledContainer1)
 
 }

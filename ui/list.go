@@ -155,8 +155,10 @@ func (l *List) HandleInput(input input.KeyInput) {
 	switch input.GetKey() {
 	case keyboard.KeyArrowDown:
 		l.ScrollFwd()
+		l.RequestRedraw()
 	case keyboard.KeyArrowUp:
 		l.ScrollBack()
+		l.RequestRedraw()
 	default:
 		l.ViewImpl.HandleInput(input)
 	}
