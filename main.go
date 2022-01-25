@@ -47,6 +47,7 @@ func ShowTextPopup(app *ui.Application, title string, text string) {
 	textView := ui.TextViewNew(text)
 	container := ui.TitledContainerNew(title, textView, true)
 	container.SetRect(ui.RectNew((maxWidth-popupWidth)/2, (maxHeight-popupHeight)/2, popupWidth, popupHeight))
+	container.Border = ui.LineBorder
 
 	app.ShowPopup(container)
 }

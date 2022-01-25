@@ -7,6 +7,13 @@ import (
 	"unsafe"
 )
 
+const LineBorderTopLeft string = "\u250C"
+const LineBorderTopRight string = "\u2510"
+const LineBorderBottomLeft string = "\u2514"
+const LineBorderBottomRight string = "\u2518"
+const LineBorderHorizontal string = "\u2502"
+const LineBorderVertical string = "\u2500"
+
 type winsize struct {
 	Row    uint16
 	Col    uint16

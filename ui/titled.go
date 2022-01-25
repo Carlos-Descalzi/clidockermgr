@@ -1,8 +1,52 @@
 package ui
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/clidockermgr/input"
 )
+
+type BorderStyle func(string, Rect)
+
+func HeaderBorder(title string, rect Rect) {
+	GotoXY(rect.x, rect.y)
+	Background(7)
+	Foreground(0)
+	WriteFill(title, rect.w)
+	Reset()
+}
+
+func FullBorder(title string, rect Rect) {
+	GotoXY(rect.x, rect.y)
+	Background(7)
+	Foreground(0)
+	WriteFill(title, rect.w)
+	GotoXY(rect.x, rect.y+rect.h-1)
+	WriteFill("", rect.w)
+	WriteV(" ", rect.x, rect.y+1, rect.h-1)
+	WriteV(" ", rect.x+rect.w-1, rect.y+1, rect.h-1)
+	Reset()
+}
+
+func LineBorder(title string, rect Rect) {
+	GotoXY(rect.x+1, rect.y)
+	fmt.Print(title)
+	GotoXY(rect.x, rect.y)
+	fmt.Print(LineBorderTopLeft)
+	WriteV(LineBorderHorizontal, rect.x, rect.y+1, rect.h-2)
+	WriteV(LineBorderHorizontal, rect.x+rect.w-1, rect.y+1, rect.h-2)
+	GotoXY(rect.x, rect.y+rect.h-1)
+	fmt.Print(LineBorderBottomLeft)
+	GotoXY(rect.x+rect.w-1, rect.y+rect.h-1)
+	fmt.Print(LineBorderBottomRight)
+	GotoXY(rect.x+rect.w-1, rect.y)
+	fmt.Print(LineBorderTopRight)
+	GotoXY(rect.x+1, rect.y+rect.h-1)
+	fmt.Print(strings.Repeat(LineBorderVertical, int(rect.w-2)))
+	GotoXY(rect.x+1+uint8(len(title)), rect.y)
+	fmt.Print(strings.Repeat(LineBorderVertical, int(rect.w-2)-len(title)))
+}
 
 /**
 	A container with title
@@ -11,11 +55,11 @@ type TitledContainer struct {
 	ViewImpl
 	title  string
 	child  View
-	border bool
+	Border BorderStyle
 }
 
 func TitledContainerNew(title string, child View, border bool) *TitledContainer {
-	var container = TitledContainer{title: title, child: child, border: border}
+	var container = TitledContainer{title: title, child: child, Border: HeaderBorder}
 	container.Init()
 	return &container
 }
@@ -25,7 +69,7 @@ func (t *TitledContainer) SetRect(rect Rect) {
 
 	var padding uint8 = 0
 
-	if t.border {
+	if t.Border != nil {
 		padding = 1
 	}
 
@@ -38,17 +82,9 @@ func (t *TitledContainer) SetRect(rect Rect) {
 }
 
 func (t *TitledContainer) Draw() {
-	GotoXY(t.rect.x, t.rect.y)
-	Background(7)
-	Foreground(0)
-	WriteFill(t.title, t.rect.w)
-	if t.border {
-		GotoXY(t.rect.x, t.rect.y+t.rect.h-1)
-		WriteFill("", t.rect.w)
-		WriteV(" ", t.rect.x, t.rect.y+1, t.rect.h-1)
-		WriteV(" ", t.rect.x+t.rect.w-1, t.rect.y+1, t.rect.h-1)
+	if t.Border != nil {
+		t.Border(t.title, t.rect)
 	}
-	Reset()
 	t.child.Draw()
 }
 
