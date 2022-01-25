@@ -16,8 +16,9 @@ const (
 
 type ContainerListModelItem struct {
 	container types.Container
-	usedMem   int
-	maxMem    int
+	usedMem   uint64
+	maxMem    uint64
+	diskUsage int64
 }
 
 func (c ContainerListModelItem) Value() interface{} {
@@ -46,7 +47,9 @@ func (i ContainerListModelItem) String() string {
 
 	var memString = fmt.Sprintf("%s / %s", util.FormatMemory(i.usedMem), util.FormatMemory(i.maxMem))
 
-	return fmt.Sprintf("%s %-40s %-30s %-30s %s", i.container.ID[0:12], image, command, status, memString)
+	var diskString = util.FormatMemory(uint64(i.diskUsage))
+
+	return fmt.Sprintf("%s %-40s %-30s %-30s %20s %10s", i.container.ID[0:12], image, command, status, memString, diskString)
 }
 
 type ContainerListModel struct {
@@ -87,8 +90,10 @@ func (m ContainerListModel) Item(index int) ui.ListItem {
 
 	return &ContainerListModelItem{
 		m.items[index].container,
-		int(m.items[index].stats.MemoryStats.Usage),
-		int(m.items[index].stats.MemoryStats.Limit)}
+		m.items[index].stats.MemoryStats.Usage,
+		m.items[index].stats.MemoryStats.Limit,
+		m.items[index].diskUsage,
+	}
 }
 func (m *ContainerListModel) ImagesUpdated() {
 }

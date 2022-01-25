@@ -22,6 +22,7 @@ type ServiceListener interface {
 type ContainerSummary struct {
 	container types.Container
 	stats     types.Stats
+	diskUsage int64
 }
 
 type StatData struct {
@@ -36,12 +37,20 @@ type ServiceHandler struct {
 	images           []types.ImageSummary
 	containers       []ContainerSummary
 	listeners        *list.List
+	diskUsage        map[string]int64
 }
 
 func ServiceHandlerNew(client *client.Client) *ServiceHandler {
-	handler := ServiceHandler{client: client, active: true, listeners: list.New()}
+	handler := ServiceHandler{
+		client:    client,
+		active:    true,
+		listeners: list.New(),
+		diskUsage: make(map[string]int64),
+	}
+
 	go handler.UpdateContainers()
 	go handler.UpdateImages()
+	go handler.GetSystemStats()
 	return &handler
 }
 
@@ -62,6 +71,12 @@ func (s *ServiceHandler) NotifyImagesUpdated() {
 }
 
 func (s *ServiceHandler) Containers() []ContainerSummary {
+	for i := range s.containers {
+		val, ok := s.diskUsage[s.containers[i].container.ID]
+		if ok {
+			s.containers[i].diskUsage = val
+		}
+	}
 	return s.containers
 }
 
@@ -79,6 +94,35 @@ func (s *ServiceHandler) UpdateContainers() {
 			s.DoUpdateContainers(containers)
 		}
 		s.NotifyContainersUpdated()
+		time.Sleep(time.Second)
+	}
+}
+
+func (s *ServiceHandler) UpdateImages() {
+	for s.active {
+		images, err := s.client.ImageList(context.Background(), types.ImageListOptions{})
+
+		if err != nil {
+			log.Printf("Error getting images: %s", err)
+		} else {
+			s.images = images
+		}
+		s.NotifyImagesUpdated()
+		time.Sleep(time.Second)
+	}
+}
+
+func (s *ServiceHandler) GetSystemStats() {
+	for s.active {
+		diskUsage, err := s.client.DiskUsage(context.Background())
+
+		if err != nil {
+			log.Printf("Error getting disk usage: %s", err)
+		} else {
+			for i := range diskUsage.Containers {
+				s.diskUsage[diskUsage.Containers[i].ID] = diskUsage.Containers[i].SizeRw
+			}
+		}
 		time.Sleep(time.Second)
 	}
 }
@@ -106,20 +150,6 @@ func (s *ServiceHandler) DoUpdateContainers(containers []types.Container) {
 	}
 	wg.Wait()
 	s.containers = summaries
-}
-
-func (s *ServiceHandler) UpdateImages() {
-	for s.active {
-		images, err := s.client.ImageList(context.Background(), types.ImageListOptions{})
-
-		if err != nil {
-			log.Printf("Error getting images: %s", err)
-		} else {
-			s.images = images
-		}
-		s.NotifyImagesUpdated()
-		time.Sleep(time.Second)
-	}
 }
 
 func (s *ServiceHandler) RemoveImage(imageId string) {
@@ -173,6 +203,15 @@ func (s *ServiceHandler) InspectImage(imageId string) string {
 		log.Print("Error inspecting image", err)
 	}
 	return ""
+}
+
+func (s *ServiceHandler) InspectContainerRaw(containerId string) types.ContainerJSON {
+	inspect, err := s.client.ContainerInspect(context.Background(), containerId)
+
+	if err != nil {
+		log.Print("Error inspecting container", err)
+	}
+	return inspect
 }
 
 func (s *ServiceHandler) InspectContainer(containerId string) string {

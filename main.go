@@ -1,10 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 
+	"github.com/acarl005/stripansi"
 	"github.com/clidockermgr/docker"
 	"github.com/clidockermgr/input"
 	"github.com/clidockermgr/ui"
@@ -20,6 +24,7 @@ const HelpText = `Keys:
 	h: Shows this help
     Container view:
         v: Displays container information
+		d: Displays container details
         s: Opens a shell in a container
         b: Opens a bash shell in a container, if command is present
         l: Shows container log
@@ -48,7 +53,33 @@ func ShowTextPopup(app *ui.Application, title string, text string) {
 
 func ShowContainerInspect(app *ui.Application, client *docker.ServiceHandler, containerId string) {
 	strResult := client.InspectContainer(containerId)
-	ShowTextPopup(app, "Container Details", strResult)
+	ShowTextPopup(app, "Container Inspect", strResult)
+}
+
+func MakeContainerDetailsString(container types.ContainerJSON) string {
+
+	str := "ID           : " + container.ID + "\n" +
+		"Image Name   : " + container.Config.Image + "\n" +
+		"Command Line : " + strings.Join(container.Config.Cmd, " ") + "\n" +
+		"Work Dir     : " + container.Config.WorkingDir + "\n" +
+		"Status       : " + container.State.Status +
+		", Exit Code: " + strconv.FormatInt(int64(container.State.ExitCode), 10) +
+		", Killed: " + strconv.FormatBool(container.State.OOMKilled) +
+		", Error: " + container.State.Error + "\n" +
+		"Environment  :\n    " + strings.Join(container.Config.Env, "\n    ") + "\n" +
+		"Mounts       :\n"
+
+	for k, v := range container.Config.Volumes {
+		str += "\t" + k + ":" + fmt.Sprintf("%s", v) + "\n"
+	}
+
+	return str
+}
+
+func ShowContainerDetails(app *ui.Application, client *docker.ServiceHandler, containerId string) {
+	result := client.InspectContainerRaw(containerId)
+
+	ShowTextPopup(app, "Container Details", MakeContainerDetailsString(result))
 }
 
 func ShowHelp(app *ui.Application) {
@@ -79,9 +110,8 @@ func ExecBashShell(containerId string) {
 }
 
 func ShowLogs(app *ui.Application, client *docker.ServiceHandler, containerId string) {
-
 	logs := client.Logs(containerId)
-	ShowTextPopup(app, "Logs", logs)
+	ShowTextPopup(app, "Logs", stripansi.Strip(logs))
 }
 
 func SetupLog() {
@@ -112,6 +142,10 @@ func BuildContainersView(app *ui.Application, client *docker.ServiceHandler, wid
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		ExecShell(item.ID)
 	})
+	containerList.AddKeyHandler(input.KeyInputChar('d'), func(input.KeyInput) {
+		var item = containerList.SelectedItem().Value().(*types.Container)
+		ShowContainerDetails(app, client, item.ID)
+	})
 	containerList.AddKeyHandler(input.KeyInputChar('b'), func(input.KeyInput) {
 		var item = containerList.SelectedItem().Value().(*types.Container)
 		ExecBashShell(item.ID)
@@ -140,7 +174,7 @@ func BuildContainersView(app *ui.Application, client *docker.ServiceHandler, wid
 
 func ShowImageInspect(app *ui.Application, client *docker.ServiceHandler, imageId string) {
 	result := client.InspectImage(imageId)
-	ShowTextPopup(app, "Image Details", result)
+	ShowTextPopup(app, "Image Inspect", result)
 }
 
 func DoRunImage(image types.ImageSummary, command string) {

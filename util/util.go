@@ -35,7 +35,7 @@ const MB = KB * 1024
 const GB = MB * 1024
 const TB = GB * 1024
 
-func FormatMemory(amount int) string {
+func FormatMemory(amount uint64) string {
 	if amount < KB {
 		return fmt.Sprintf("%d B", amount)
 	}
