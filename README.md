@@ -8,6 +8,7 @@ Key bindings:
 - ESC: Closes the active popup, or exits the application
 - TAB: Cycles focus across views
 - h: Show help
+- Arrow up/down: selects an item of any of the lists displayed.
 
 Containers:
 
