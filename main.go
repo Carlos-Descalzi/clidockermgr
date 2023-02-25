@@ -41,8 +41,8 @@ func ShowTextPopup(app *ui.Application, title string, text string) {
 
 	maxWidth, maxHeight := ui.ScreenSize()
 
-	popupWidth := uint8(float32(maxWidth) * 0.75)
-	popupHeight := uint8(float32(maxHeight) * 0.8)
+	popupWidth := uint16(float32(maxWidth) * 0.75)
+	popupHeight := uint16(float32(maxHeight) * 0.8)
 
 	textView := ui.TextViewNew(text)
 	container := ui.TitledContainerNew(title, textView, true)
@@ -125,7 +125,7 @@ func SetupLog() {
 
 }
 
-func BuildContainersView(app *ui.Application, client *docker.ServiceHandler, width uint8, height uint8) {
+func BuildContainersView(app *ui.Application, client *docker.ServiceHandler, width uint16, height uint16) {
 	var containerList = ui.ListNew()
 
 	containerList.SetModel(docker.ContainerListModelNew(client))
@@ -198,7 +198,7 @@ func RunBashShell(image types.ImageSummary) {
 	DoRunImage(image, "bash")
 }
 
-func BuildImagesView(app *ui.Application, client *docker.ServiceHandler, width uint8, height uint8) {
+func BuildImagesView(app *ui.Application, client *docker.ServiceHandler, width uint16, height uint16) {
 	var imageList = ui.ListNew()
 	imageList.SetModel(docker.ImagesListModelNew(client))
 
@@ -249,5 +249,4 @@ func main() {
 	BuildImagesView(app, service, maxWidth, areaHeight)
 
 	app.Loop()
-
 }

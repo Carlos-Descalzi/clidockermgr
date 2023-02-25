@@ -111,7 +111,7 @@ func (l *List) SelectedItem() ListItem {
 func (l *List) Draw() {
 	GotoXY(l.rect.x, l.rect.y)
 
-	var y uint8 = 0
+	var y uint16 = 0
 
 	for i := l.startIndex; i < l.Model.ItemCount() && y <= l.rect.h; i++ {
 		GotoXY(l.rect.x, l.rect.y+y)

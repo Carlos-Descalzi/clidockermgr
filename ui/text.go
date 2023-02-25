@@ -11,9 +11,9 @@ import (
 type TextView struct {
 	ViewImpl
 	text     []string
-	xpos     uint8
-	ypos     uint8
-	maxWidth uint8
+	xpos     uint16
+	ypos     uint16
+	maxWidth uint16
 }
 
 func TextViewNew(text string) *TextView {
@@ -25,14 +25,14 @@ func TextViewNew(text string) *TextView {
 	textView.Init()
 
 	for r := range textLines {
-		textView.maxWidth = uint8(util.Max(int(textView.maxWidth), len(textLines[r])))
+		textView.maxWidth = uint16(util.Max(int(textView.maxWidth), len(textLines[r])))
 	}
 
 	return &textView
 }
 
 func (t *TextView) Draw() {
-	var y uint8 = 0
+	var y uint16 = 0
 
 	var firstLine = int(t.ypos)
 	var lastLine = int(t.ypos + t.rect.h - 1)
@@ -49,7 +49,7 @@ func (t *TextView) Draw() {
 		GotoXY(t.rect.x, t.rect.y+y)
 
 		var line = t.text[v]
-		if t.xpos < uint8(len(line)) {
+		if t.xpos < uint16(len(line)) {
 			line = line[t.xpos:]
 		} else {
 			line = ""
@@ -76,7 +76,7 @@ func (t *TextView) ScrollBack() {
 }
 
 func (t *TextView) ScrollFwd() {
-	if t.ypos+t.rect.h < uint8(len(t.text))-1 {
+	if t.ypos+t.rect.h < uint16(len(t.text))-1 {
 		t.ypos++
 	}
 	t.RequestRedraw()
@@ -106,13 +106,13 @@ func (t *TextView) ScrollPageFwd() {
 		ypos = length - int(t.rect.h) - 1
 	}
 
-	t.ypos = uint8(ypos)
+	t.ypos = uint16(ypos)
 	t.RequestRedraw()
 }
 
 func (t *TextView) ScrollPageBack() {
 	var ypos int = util.Max(0, int(t.ypos)-int(t.rect.h))
-	t.ypos = uint8(ypos)
+	t.ypos = uint16(ypos)
 	t.RequestRedraw()
 }
 

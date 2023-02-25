@@ -44,7 +44,7 @@ func LineBorder(title string, rect Rect) {
 	fmt.Print(LineBorderTopRight)
 	GotoXY(rect.x+1, rect.y+rect.h-1)
 	fmt.Print(strings.Repeat(LineBorderVertical, int(rect.w-2)))
-	GotoXY(rect.x+1+uint8(len(title)), rect.y)
+	GotoXY(rect.x+1+uint16(len(title)), rect.y)
 	fmt.Print(strings.Repeat(LineBorderVertical, int(rect.w-2)-len(title)))
 }
 
@@ -67,7 +67,7 @@ func TitledContainerNew(title string, child View, border bool) *TitledContainer 
 func (t *TitledContainer) SetRect(rect Rect) {
 	t.ViewImpl.SetRect(rect)
 
-	var padding uint8 = 0
+	var padding uint16 = 0
 
 	if t.Border != nil {
 		padding = 1
